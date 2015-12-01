@@ -2,11 +2,6 @@
 // Meeting Scheduling System - 11-5-2015
 package mss;
 import java.io.Serializable;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.FileOutputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 
 import java.util.ArrayList;
 
@@ -31,15 +26,7 @@ public class MSS implements Serializable {
     }
     
     public boolean deletePerson(Person personToDelete) {
-    /*  boolean pass = true;
-        for (Person p : people) {
-            if (p.getFirstName().equals(personToDelete.getFirstName()) && p.getLastName().equals(personToDelete.getLastName()) 
-                                                && p.getPhoneNumber().equals(personToDelete.getPhoneNumber())) {   // compare person objects field by field (if the same):
-                people.remove(personToDelete);
-                pass = true;
-            } 
-        } 
-    */
+        
         return people.remove(personToDelete);
     }
     public boolean addPerson(Person p) {
@@ -348,30 +335,9 @@ public class MSS implements Serializable {
         return personMeetings;  // returns array of the meetings 
     }
     
-    public boolean saveMSS() {
-        boolean success = true;
-        String path = "scheduler.ser";
-        try {
-            FileOutputStream fout = new FileOutputStream(path);
-            ObjectOutputStream oOut = new ObjectOutputStream(fout);
-            oOut.writeObject(this);
-            oOut.close();
-            fout.close();
-            
-        } catch (IOException ex) {  // FileNotFoundException may be thrown, but is subclass of 
-            success = false;         // IOException
-            System.err.println(ex);
-        }
-        
-        return success;
-    }
-    
     public static void main(String[] args) {
         GUINewMSSFrame newFrame = new GUINewMSSFrame();
         newFrame.setVisible(true);
-      //  MSSFrame frame = new MSSFrame();
-      //  frame.setDefaultCloseOperation(MSSFrame.EXIT_ON_CLOSE);
-      //  frame.setVisible(true);
     }
     
     class RoomNumberNotFoundException extends Exception {

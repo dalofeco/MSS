@@ -13,9 +13,7 @@ import java.awt.event.ActionEvent;
 
 import javax.swing.JLabel;
 import javax.swing.JButton;
-import javax.swing.JFrame;
 import javax.swing.JTextField;
-import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 
 public class GUIPersonPopup extends JDialog implements ActionListener {

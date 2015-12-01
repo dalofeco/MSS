@@ -2,14 +2,17 @@
 // Meeting Scheduling System [MSSFrame] - 11-9-15
 package mss;
 
+import java.io.ObjectInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.File;
+
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
-import javax.swing.JTextField;
 import javax.swing.JButton;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JScrollPane;
-import javax.swing.JComboBox;
 import javax.swing.JList;
 import javax.swing.JTextArea;
 import javax.swing.JRadioButton;
@@ -19,23 +22,27 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.BorderFactory;
 import javax.swing.border.Border;
 import javax.swing.JPanel;
+import javax.swing.JMenuBar;
+import javax.swing.JMenu;
+import javax.swing.JMenuItem;
 
-import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Container;
-import java.awt.Component;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.ItemEvent;
+import java.io.FileOutputStream;
+import java.io.ObjectOutputStream;
+import javax.swing.JFileChooser;
 
 public class MSSFrame extends JFrame implements ActionListener, ListSelectionListener, MouseListener, ItemListener {
     
-    private MSS scheduler;
+    private final MSS scheduler;
     
     private Room selectedRoom;
     private Meeting selectedMeeting;
@@ -57,6 +64,10 @@ public class MSSFrame extends JFrame implements ActionListener, ListSelectionLis
     private final JRadioButton printRButton;
     private final JRadioButton editRButton;
     
+    private final JMenuBar menuBar;
+    private final JMenuItem openMenuItem;
+    private final JMenuItem saveMenuItem;
+    
     private boolean print = true;           // true when double click prints, false when double click edits
     
     private boolean valueChangedRunning = false; // boolean to keep track of when valueChanged is running 
@@ -67,10 +78,43 @@ public class MSSFrame extends JFrame implements ActionListener, ListSelectionLis
         return scheduler;
     }
     
+    private void createMenuBar() { // creates the menu bar
+        JMenu file = new JMenu("File");
+        
+        saveMenuItem.setToolTipText("Save to a file..");
+        openMenuItem.setToolTipText("Open a scheduler file..");
+        JMenuItem exitMenuItem = new JMenuItem("Exit");
+        exitMenuItem.setToolTipText("Exit MSS");
+        
+        saveMenuItem.addActionListener(this);
+        openMenuItem.addActionListener(this);
+        
+        exitMenuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent ae) {
+                System.exit(0);
+            }
+        });
+        
+        file.add(saveMenuItem);
+        file.add(openMenuItem);
+        file.add(exitMenuItem);
+        
+        menuBar.add(file);
+    }
+    
     MSSFrame(MSS mss) {
         super("Meeting Scheduling System");
         getContentPane().setLayout(new GridLayout(2,1)); // 2 rows, 1 column main layout 
-                
+        
+        menuBar = new JMenuBar();        
+        saveMenuItem = new JMenuItem("Save");
+        openMenuItem = new JMenuItem("Open");
+
+        createMenuBar();
+        
+        setJMenuBar(menuBar);
+        
         scheduler = mss;
         
         Container topRow = new Container();
@@ -245,22 +289,22 @@ public class MSSFrame extends JFrame implements ActionListener, ListSelectionLis
         
         JLabel textTitle = new JLabel("Output: ");
         
-        outputTextArea = new JTextArea("YOLOLOLLO");
+        outputTextArea = new JTextArea();
         outputTextArea.setEditable(false);
         outputTextArea.setBorder(BorderFactory.createLineBorder(Color.BLACK));
         
         bottomRow.add(textTitle, BorderLayout.NORTH);
         bottomRow.add(outputTextArea, BorderLayout.CENTER);
         
-        // CREATING DEFAULT VALUES FOR ROOMS AND PEOPLE
-        scheduler.addPerson(new Person("Bill", "Cosby", "8145655525"));
-        scheduler.addPerson(new Person("Obama", "Gates", "221-911-1199"));
-        scheduler.addPerson(new Person("Hi", "Lopez", "1123554454"));
-        scheduler.addPerson(new Person("Ne", "Rerta", "1123553354"));
-        scheduler.addPerson(new Person("Nejo", "El Conejo", "3423554474"));
-        scheduler.addPerson(new Person("Robert", "Matinez", "1123554760"));
-        scheduler.addPerson(new Person("Rob", "Lorenzo", "1198554454"));
-        scheduler.addPerson(new Person("Eric", "Propardo", "1123444454")); 
+        // CREATING DEFAULT TEST VALUES FOR PEOPLE
+        //scheduler.addPerson(new Person("Bill", "Cosby", "8145655525"));
+        //scheduler.addPerson(new Person("Obama", "Gates", "221-911-1199"));
+        //scheduler.addPerson(new Person("Hi", "Lopez", "1123554454"));
+        //scheduler.addPerson(new Person("Ne", "Rerta", "1123553354"));
+        //scheduler.addPerson(new Person("Nejo", "El Conejo", "3423554474"));
+        //scheduler.addPerson(new Person("Robert", "Matinez", "1123554760"));
+        //scheduler.addPerson(new Person("Rob", "Lorenzo", "1198554454"));
+        //scheduler.addPerson(new Person("Eric", "Propardo", "1123444454")); 
 
         // ************ \\
         // GUI ELEMENTS \\
@@ -320,7 +364,7 @@ public class MSSFrame extends JFrame implements ActionListener, ListSelectionLis
                 int select = JOptionPane.showConfirmDialog(this, String.format("Are you sure you want to delete %s %s?", personToDelete.getFirstName(), personToDelete.getLastName())); 
                 // bring up confirmation dialog to prevent accidental deletion
                 if (select == 0) { // user selected YES
-                    scheduler.deletePerson(personToDelete);
+                    deletePerson(personToDelete);
                     refreshLists();
                 }
             }
@@ -330,10 +374,14 @@ public class MSSFrame extends JFrame implements ActionListener, ListSelectionLis
                 int select = JOptionPane.showConfirmDialog(this, String.format("Are you sure you want to delete room %d?", roomToDelete.getRoomNumber()));
                 // bring up confirmation dialog to prevent accidental deletion
                 if (select == 0) {// user selected YES
-                    scheduler.deleteRoom(roomToDelete.getRoomNumber());
+                    deleteRoom(roomToDelete);
                     refreshLists();
                 }
             }
+        } else if (event.getSource() == saveMenuItem) {
+            saveMSS();
+        } else if (event.getSource() == openMenuItem) {
+            openMSS();
         }
 
     }
@@ -487,4 +535,76 @@ public class MSSFrame extends JFrame implements ActionListener, ListSelectionLis
     
     // ***** END ITEMLISTENER METHODS ********
     
+    private void openMSS() {
+        File file;
+        
+        JFileChooser fileChooser = new JFileChooser();
+        int returnValue = fileChooser.showOpenDialog(this);
+        
+        if (returnValue == fileChooser.APPROVE_OPTION) {
+            file = fileChooser.getSelectedFile();
+            
+            try {
+            FileInputStream fileReader = new FileInputStream(file);
+            ObjectInputStream objectReader = new ObjectInputStream(fileReader);
+
+            MSS newScheduler = (MSS)objectReader.readObject();
+
+            objectReader.close();
+            fileReader.close();
+
+            MSSFrame newFrame = new MSSFrame(newScheduler);
+            newFrame.setVisible(true);
+
+            dispose();
+
+            } catch (IOException | ClassNotFoundException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+    
+    public boolean saveMSS() {
+        File file;
+        boolean success = true;
+        
+        JFileChooser fileChooser = new JFileChooser();
+        int returnValue = fileChooser.showSaveDialog(this);
+        
+        if (returnValue == fileChooser.APPROVE_OPTION) {
+            file = fileChooser.getSelectedFile();
+            
+            try {
+                FileOutputStream fout = new FileOutputStream(file);
+                ObjectOutputStream oOut = new ObjectOutputStream(fout);
+                oOut.writeObject(this.getScheduler());
+                oOut.close();
+                fout.close();
+
+            } catch (IOException ex) {  // FileNotFoundException may be thrown, but is subclass of 
+                success = false;         // IOException
+                ex.printStackTrace();
+            }
+        } else 
+            success = false;
+        
+        return success;
+    }
+    
+    private void deletePerson(Person personToDelete) {
+        Meeting []meetings = scheduler.findMeetingsForPerson(personToDelete);
+        if (meetings.length > 0) {
+            JOptionPane.showMessageDialog(this, "Unable to delete, the person is already in a meeting.");
+        } else
+            scheduler.deletePerson(personToDelete);
+    }
+    
+    private void deleteRoom(Room roomToDelete) {
+        if (roomToDelete.getNonNullMeetings().length > 0) // if it contains a single non-null meeting
+            JOptionPane.showMessageDialog(this, String.format("Room %d could not be deleted because it contains %d meetings in it.", 
+                    roomToDelete.getRoomNumber(), roomToDelete.getNonNullMeetings().length)); // do not delete it, pop up a message
+        else
+            scheduler.deleteRoom(roomToDelete.getRoomNumber()); // delete the room
+    }
+   
 }

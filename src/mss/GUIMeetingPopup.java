@@ -327,7 +327,8 @@ public class GUIMeetingPopup extends JDialog implements ActionListener, ItemList
                     if (newInfo.contains(rememberedSelection)) // if the remembered item is still in new possible selections
                         participantsComboBoxes[i].setSelectedItem(rememberedSelection); // resets the previously selected item
                     else
-                        participantsComboBoxes[i].setSelectedIndex(i);
+                        if (participantsComboBoxes[i].getItemCount() > i) // to prevent out of bounds selections
+                            participantsComboBoxes[i].setSelectedIndex(i);
                 }
             }
             participantsContainer.validate();

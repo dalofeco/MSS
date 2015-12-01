@@ -5,7 +5,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
-import javax.swing.JTextField;
+import javax.swing.JFileChooser;
 
 import java.awt.Container;
 import java.awt.BorderLayout;
@@ -13,6 +13,10 @@ import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 
 
 public class GUINewMSSFrame extends JFrame implements ActionListener {
@@ -74,8 +78,6 @@ public class GUINewMSSFrame extends JFrame implements ActionListener {
         mainFrame.setDefaultCloseOperation(MSSFrame.EXIT_ON_CLOSE);
         mainFrame.setVisible(true); // display the main frame
         dispose(); // get rid of current popup
-        scheduler.saveMSS();
-        
     }
     
     @Override
@@ -84,10 +86,38 @@ public class GUINewMSSFrame extends JFrame implements ActionListener {
         if (e.getSource() == createButton)
             createMSSWithRooms(((Integer)numberOfRooms.getSelectedItem()).intValue()); // create scheduler with x rooms
         else if (e.getSource() == openButton)
-            ; // open file open dialog
+            openMSS(); // open file open dialog
         else if (e.getSource() == cancelButton)
             dispose(); // get rid of current window
     
+    }
+    
+    private void openMSS() {
+        File file;
+
+        JFileChooser fileChooser = new JFileChooser();
+        int returnValue = fileChooser.showOpenDialog(this);
+        if (returnValue == fileChooser.APPROVE_OPTION) {
+            file = fileChooser.getSelectedFile();
+
+            try {
+            FileInputStream fileReader = new FileInputStream(file);
+            ObjectInputStream objectReader = new ObjectInputStream(fileReader);
+
+            MSS newScheduler = (MSS)objectReader.readObject();
+
+            objectReader.close();
+            fileReader.close();
+
+            MSSFrame newFrame = new MSSFrame(newScheduler);
+            newFrame.setVisible(true);
+
+            dispose();
+
+            } catch (IOException | ClassNotFoundException ex) {
+                ex.printStackTrace();
+            }
+        } 
     }
 
     
