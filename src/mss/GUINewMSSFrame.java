@@ -110,6 +110,7 @@ public class GUINewMSSFrame extends JFrame implements ActionListener {
             fileReader.close();
 
             MSSFrame newFrame = new MSSFrame(newScheduler);
+            newFrame.setDefaultCloseOperation(MSSFrame.EXIT_ON_CLOSE);
             newFrame.setVisible(true);
 
             dispose();

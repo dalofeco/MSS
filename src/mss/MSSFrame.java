@@ -65,6 +65,7 @@ public class MSSFrame extends JFrame implements ActionListener, ListSelectionLis
     private final JRadioButton editRButton;
     
     private final JMenuBar menuBar;
+    private final JMenuItem newMenuItem;
     private final JMenuItem openMenuItem;
     private final JMenuItem saveMenuItem;
     
@@ -81,6 +82,7 @@ public class MSSFrame extends JFrame implements ActionListener, ListSelectionLis
     private void createMenuBar() { // creates the menu bar
         JMenu file = new JMenu("File");
         
+        
         saveMenuItem.setToolTipText("Save to a file..");
         openMenuItem.setToolTipText("Open a scheduler file..");
         JMenuItem exitMenuItem = new JMenuItem("Exit");
@@ -88,7 +90,8 @@ public class MSSFrame extends JFrame implements ActionListener, ListSelectionLis
         
         saveMenuItem.addActionListener(this);
         openMenuItem.addActionListener(this);
-        
+        newMenuItem.addActionListener(this);
+
         exitMenuItem.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent ae) {
@@ -96,6 +99,7 @@ public class MSSFrame extends JFrame implements ActionListener, ListSelectionLis
             }
         });
         
+        file.add(newMenuItem);
         file.add(saveMenuItem);
         file.add(openMenuItem);
         file.add(exitMenuItem);
@@ -108,6 +112,7 @@ public class MSSFrame extends JFrame implements ActionListener, ListSelectionLis
         getContentPane().setLayout(new GridLayout(2,1)); // 2 rows, 1 column main layout 
         
         menuBar = new JMenuBar();        
+        newMenuItem = new JMenuItem("New");
         saveMenuItem = new JMenuItem("Save");
         openMenuItem = new JMenuItem("Open");
 
@@ -120,8 +125,8 @@ public class MSSFrame extends JFrame implements ActionListener, ListSelectionLis
         Container topRow = new Container();
         topRow.setLayout(new GridLayout(2,2)); // 4 by 4 grid layout for top row
         
-        final ImageIcon plusIcon = new ImageIcon("images/plus-icon.png");  // get plus icon for buttons
-        final ImageIcon minusIcon = new ImageIcon("images/minus-icon.png"); // get minus icon for buttons
+        final ImageIcon plusIcon = new ImageIcon(getClass().getClassLoader().getResource("plus-icon.png"));  // get plus icon for buttons
+        final ImageIcon minusIcon = new ImageIcon(getClass().getClassLoader().getResource("minus-icon.png")); // get minus icon for buttons
         
         // ROOMS CONTAINER
         Container roomsContainer = new Container();
@@ -334,9 +339,12 @@ public class MSSFrame extends JFrame implements ActionListener, ListSelectionLis
     @Override
     public void actionPerformed(ActionEvent event) {
         if (event.getSource() == plusMeeting) {
-            GUIMeetingPopup mpopup = new GUIMeetingPopup(this);
-            mpopup.show();
-            refreshLists();
+            if (scheduler.getPeopleArray().length > 0 && scheduler.getRoomsArray().length > 0) { // make sure there' people to add to the meetings
+                GUIMeetingPopup mpopup = new GUIMeetingPopup(this);
+                mpopup.show();
+                refreshLists();
+            } else
+                JOptionPane.showMessageDialog(this, "Unable to add a meeting; make sure there is at least one room or person.");
         } else if (event.getSource() == plusPerson) {
             GUIPersonPopup ppopup = new GUIPersonPopup(this);
             ppopup.show();
@@ -382,6 +390,8 @@ public class MSSFrame extends JFrame implements ActionListener, ListSelectionLis
             saveMSS();
         } else if (event.getSource() == openMenuItem) {
             openMSS();
+        } else if (event.getSource() == newMenuItem) {
+            newMSS();
         }
 
     }
@@ -534,6 +544,16 @@ public class MSSFrame extends JFrame implements ActionListener, ListSelectionLis
     }
     
     // ***** END ITEMLISTENER METHODS ********
+    
+    private void newMSS() {
+        int input = JOptionPane.showConfirmDialog(this, "Are you sure you want to start a new schedule? (All progress will be lost)");
+        if (input == JOptionPane.YES_OPTION) {
+            MSSFrame newFrame = new MSSFrame(new MSS());
+            newFrame.setDefaultCloseOperation(MSSFrame.EXIT_ON_CLOSE);
+            newFrame.setVisible(true);
+            dispose();
+        }
+    }
     
     private void openMSS() {
         File file;
