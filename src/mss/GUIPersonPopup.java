@@ -110,10 +110,16 @@ public class GUIPersonPopup extends JDialog implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent ae) {
         if (ae.getSource() == createButton) {
-            if (!firstNameField.getText().equals("") && !lastNameField.getText().equals("") && !phoneNumberField.getText().equals(""))
-                addPerson();
-            else
-                JOptionPane.showMessageDialog(this, "Please fill in all fields.");
+            if (!firstNameField.getText().equals("") ) {
+                if(!lastNameField.getText().equals("")) {
+                    if (!phoneNumberField.getText().equals("")) {
+                        addPerson();
+                    } else
+                        JOptionPane.showMessageDialog(this, "Please fill in the phone number.");
+                } else 
+                    JOptionPane.showMessageDialog(this, "Please fill in the first name.");
+            } else
+                JOptionPane.showMessageDialog(this, "Please fill in the first name.");
         } else if (ae.getSource() == cancelButton)
             dispose(); // get rid of this dialog window
     }
@@ -159,13 +165,14 @@ public class GUIPersonPopup extends JDialog implements ActionListener {
             dispose();
         }
         else if (passFirst && passLast)
-            System.out.println("Invalid phone number.");
+            JOptionPane.showMessageDialog(this, "Please fix your phone number' format. Ex: 8111112232 or 814-403-2232");
         else if (passFirst && passPhone)
-            System.out.println("Invalid last name.");
+            JOptionPane.showMessageDialog(this, "Please fix your last name. (only alphabetical characters allowed)");
         else if (passLast && passPhone)
-            System.out.println("Invalid first name.");
+            JOptionPane.showMessageDialog(this, "Please fix your first name. (only alphabetical characters allowed)");
         else
-            System.out.println("Please fill in ALL fields appropriately.");
+            JOptionPane.showMessageDialog(this, "Please fill in all fields appropriately.");
+
     }
     
     private boolean verifyPhoneInput(String phone) {

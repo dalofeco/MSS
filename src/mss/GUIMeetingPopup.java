@@ -58,7 +58,7 @@ public class GUIMeetingPopup extends JDialog implements ActionListener, ItemList
             this.setSize(500, 500);
             
             scheduler = owner.getScheduler();
-            availablePeople = 2; // 2 to allow for the first addPerson(), then after that refreshParticipantsComboBoxes() 
+            availablePeople = -1; // -1 to allow for the first addPerson(), then after that refreshParticipantsComboBoxes() 
                                    // takes care of updating its value
                        
             setLayout(new BorderLayout());  // main layout
@@ -171,13 +171,13 @@ public class GUIMeetingPopup extends JDialog implements ActionListener, ItemList
             buttonsContainer.setLayout(buttonsLayout);
             
             // create two buttons, one with plus and other with minus icons
-            ImageIcon plusIcon = new ImageIcon("images/plus-icon.png");
+            ImageIcon plusIcon = new ImageIcon(getClass().getClassLoader().getResource("plus-icon.png"));
             plusButton = new JButton(plusIcon);
             plusButton.setSize(125, 125);
             plusButton.setToolTipText("Add a person");
             plusButton.addActionListener(this);
             
-            ImageIcon minusIcon = new ImageIcon("images/minus-icon.png");
+            ImageIcon minusIcon = new ImageIcon(getClass().getClassLoader().getResource("minus-icon.png"));
             minusButton = new JButton(minusIcon);
             minusButton.setSize(125, 125);
             minusButton.setToolTipText("Delete a person");
@@ -263,72 +263,99 @@ public class GUIMeetingPopup extends JDialog implements ActionListener, ItemList
         }
 
         
+        private void refresh() {
+            for (int i = 0; i < shown; i++)
+                removePerson();
+            
+        }
+        
         
     //    @SuppressWarnings("empty-statement") // suppress warnings for empty while loop body below
-        // function refreshes the combo boxes' fields, not allowing repetitions
+        // function refreshes the combo boxes' fields, not allowing repetitions or illegal values
     @SuppressWarnings("empty-statement")
         private void refreshParticipantsComboBoxes() {
+             
+            ArrayList<Person> elementsToAdd = new ArrayList();
+            for (Person p : valuesInParticipantsCB)
+                if (!isPersonBusyAtTimeInRoom(p, selectedTime, selectedRoom)) // assure person has no other meeting
+                    elementsToAdd.add(p);
             
+            availablePeople = elementsToAdd.size();
+
             if (shown == 1) { // if only one is shown, just add all options to the first
-                ArrayList<Person> elementsToAdd = new ArrayList();
                 Person rememberedSelection = (Person)participantsComboBoxes[0].getSelectedItem();
                 participantsComboBoxes[0].removeAllItems();
-                for (Person p : valuesInParticipantsCB)
-                    if (!isPersonBusyAtTimeInRoom(p, selectedTime, selectedRoom)) // assure person has no other meeting
-                        elementsToAdd.add(p);
                 
                 for (Person p : elementsToAdd)
                     participantsComboBoxes[0].addItem(p);
                 
                 if (elementsToAdd.contains(rememberedSelection)) // if the remembered selection is still available
                     participantsComboBoxes[0].setSelectedItem(rememberedSelection); // re-select it
+                else
+                    participantsComboBoxes[0].setSelectedIndex(0);
             }
             else {
+                
                 ArrayList<Person> taken = new ArrayList(); // stores what element index is selected
                 ArrayList<Integer> takenBy = new ArrayList(); // stores what element selected the corresponding element in taken
-
-                for (int i = 0; i < shown; i++) {
+                
+                
+                for (int i = 0; i < shown-1; i++) { // NOTE: the last box shown will be skipped to be dealt with later (since it has no selection yet)
                     Person newPerson = (Person)participantsComboBoxes[i].getSelectedItem();
                     if (!taken.contains(newPerson)) {  // only add as taken if it is the first instance
                         taken.add(newPerson); // store the Person for the selection
                         takenBy.add(i);
                     }
                 }
-
-                assert shown == taken.size();
+                int count = shown-1;
+                if (count >= elementsToAdd.size()) { // this means a whole refresh is necessary
+                    refresh(); // refresh the people panels
+                    return; 
+                }
+                while (taken.contains(elementsToAdd.get(count))) { // find a person that has not been taken
+                    count--;  // save its index in count
+                }
                 
-                availablePeople = 0;
+                taken.add(elementsToAdd.get(count));  // add the person found not to be taken
+                takenBy.add(shown-1); // taken by the last box shown
+                    
+
+                assert shown == taken.size();   
 
                 for (int i = 0; i < shown; i++) {
-                    ArrayList<Person> newInfo = (ArrayList<Person>)valuesInParticipantsCB.clone(); // make a copy of the original values, set as newInfo
-                    for (int ii = taken.size()-1; ii >= 0; ii--) {   // for every value that is selected (reverse loop to remove elements from end to start)
+                    ArrayList<Person> newInfo = (ArrayList<Person>)elementsToAdd.clone(); // make a copy of the people to add, set as newInfo
+                    for (int ii = 0; ii < taken.size(); ii++) {   // for every value that is selected 
                         if (i != takenBy.get(ii)) { // if not equal, means ComboBox at i did not take this value
-                            int indexToDelete = newInfo.indexOf(taken.get(ii));
-                            newInfo.set(indexToDelete, null); // set each entry that should be deleted to null
+                            int indexToDelete = newInfo.indexOf(taken.get(ii)); // store the index of the taken value to delete
+                            if (indexToDelete > -1) // avoid negative numbers
+                                newInfo.set(indexToDelete, null); // set each entry that should be deleted to null
                         }         // don't delete right away since deleting will change indexes for other entries and cause bugs
                     }
                     while(newInfo.remove((Person)null)); // removes every entry that is already selected by another combo box
-                
-                    for (int ii = 0; ii < newInfo.size(); ii++) { // iterate through newInfo
-                        if (isPersonBusyAtTimeInRoom(newInfo.get(ii), selectedTime, selectedRoom)) {
-                            newInfo.set(ii, null);
-                        }   
-                    }
-                    while(newInfo.remove((Person)null)); // removes every entry that is already selected by another combo box
 
-                    
                     Person rememberedSelection = (Person)participantsComboBoxes[i].getSelectedItem(); // gets the selected item to remember it
-                    
+                   
+                    //
                     participantsComboBoxes[i].removeAllItems();
+                    
                     for (Person p : newInfo) {
                         participantsComboBoxes[i].addItem(p);
-                        availablePeople++;
                     }
-                    if (newInfo.contains(rememberedSelection)) // if the remembered item is still in new possible selections
-                        participantsComboBoxes[i].setSelectedItem(rememberedSelection); // resets the previously selected item
+
+                    boolean pass = false;
+                        if (taken.contains(rememberedSelection)) { // check if the original selection is now taken
+                            if (takenBy.get(taken.indexOf(rememberedSelection)) == i) // if it is, check if they are owners
+                                pass = true; // set flag pass
+                        } else // if not taken, no problem reselecting it
+                            pass = true;
+                    
+                    if (pass) 
+                        if (newInfo.contains(rememberedSelection)) // if the remembered item is still in new possible selections
+                            participantsComboBoxes[i].setSelectedItem(rememberedSelection); // resets the previously selected item
                     else
-                        if (participantsComboBoxes[i].getItemCount() > i) // to prevent out of bounds selections
-                            participantsComboBoxes[i].setSelectedIndex(i);
+                        // if (participantsComboBoxes[i].getItemCount() > i) // to prevent out of bounds selections
+                        ;//participantsComboBoxes[i].setSelectedIndex(i);
+                    //
                 }
             }
             participantsContainer.validate();
@@ -357,8 +384,12 @@ public class GUIMeetingPopup extends JDialog implements ActionListener, ItemList
                 refreshParticipantsComboBoxes(); // must go after shown is updated (shown++)
                 participantsComboBoxes[shown-1].setVisible(true); // set first invisible visible
                 
+            } else if (availablePeople == -1) {
+                availablePeople = scheduler.getPeople().size();
+                refreshParticipantsComboBoxes();
+                addPerson();
             } else
-                System.out.println("No more people!");
+                JOptionPane.showMessageDialog(this, "No more people!");
             privateChanges = false;
         }
         private void removePerson() {
