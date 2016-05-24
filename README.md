@@ -1,6 +1,6 @@
 
 # Meeting Scheduling System (MSS)
-A GUI based Java application that allows users to create their own meetings and organize them by assigning them to rooms and people. This was created as a project for CMPSC221 at Penn State Behrend for Proferssor Naseem Ibrahim.
+A GUI based Java application that allows users to create their own meetings and organize them by assigning them to rooms and people.
 ## Usage
 In order to try it, simply download the <b>MSS.jar</b> java executable under the <b>dist</b> directory and run it.
 ## Functionality
